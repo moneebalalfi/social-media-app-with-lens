@@ -1,7 +1,36 @@
-import { Badge, Box, Flex, Heading } from "@chakra-ui/react";
+import {
+  Container,
+  Flex,
+  Heading,
+  Image as ChakraImage,
+  LinkBox,
+  Spinner,
+  Text,
+} from "@chakra-ui/react";
 import Head from "next/head";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { client, recommendedProfiles } from "../api";
 
 export default function Home() {
+  const [profiles, setProfiles] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProfiles();
+    console.log(profiles);
+  }, [profiles]);
+
+  async function fetchProfiles() {
+    try {
+      const response = await client.query(recommendedProfiles).toPromise();
+      setProfiles(response.data.recommendedProfiles);
+      setLoading(false);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   return (
     <>
       <Head>
@@ -10,13 +39,31 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <Flex h="100vh" alignItems={"center"} justifyContent={"center"}>
-        <Heading>
-          Web3 social media app with
-          <Badge ml={2} fontSize="3xl" colorScheme={"blue"}>
-            Lens Protocol
-          </Badge>
-        </Heading>
+      <Flex flexDir={"column"}>
+        {!loading ? (
+          <Container maxW={"container.lg"} p={6}>
+            {profiles.map((profile) => (
+              <Link key={profile.id} href={`/profile/${profile.id}`} passHref>
+                <LinkBox p={4} cursor="pointer" borderBottom={"1px"}>
+                  {profile.picture ? (
+                    <ChakraImage
+                      src={
+                        profile.picture?.original?.url || profile.picture.uri
+                      }
+                      alt={profile.handle}
+                      w={32}
+                      h={32}
+                    />
+                  ) : null}
+                  <Heading size="md">{profile.handle}</Heading>
+                  <Text>{profile.bio}</Text>
+                </LinkBox>
+              </Link>
+            ))}
+          </Container>
+        ) : (
+          <Spinner />
+        )}
       </Flex>
     </>
   );
